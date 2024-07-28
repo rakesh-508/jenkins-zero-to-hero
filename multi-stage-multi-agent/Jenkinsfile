@@ -1,119 +1,29 @@
 pipeline {
-    agent none // Define no global agent, as each stage will define its own
-
-    stages {
-        stage('Setup Database') {
-            agent {
-                docker {
-                    image 'mysql:latest'
-                    label 'docker-slave' // Adjust as necessary
-                }
-            }
-            environment {
-                MYSQL_ROOT_PASSWORD = 'root_password'
-                MYSQL_DATABASE = 'my_database'
-                MYSQL_USER = 'user'
-                MYSQL_PASSWORD = 'password'
-            }
-            steps {
-                script {
-                    // Initialize the database with necessary schema or data
-                    sh '''
-                        docker run --rm -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
-                                    -e MYSQL_DATABASE=${MYSQL_DATABASE} \
-                                    -e MYSQL_USER=${MYSQL_USER} \
-                                    -e MYSQL_PASSWORD=${MYSQL_PASSWORD} \
-                                    mysql:latest \
-                                    sh -c 'exec mysql -hlocalhost -uroot -p$MYSQL_ROOT_PASSWORD $MYSQL_DATABASE < /path/to/initial-schema.sql'
-                    '''
-                }
-            }
-        }
-
-        stage('Build Backend') {
-            agent {
-                docker {
-                    image 'node:14' // Assuming Node.js for backend
-                    label 'docker-slave' // Adjust as necessary
-                }
-            }
-            steps {
-                script {
-                    // Clone repository and build the backend
-                    sh '''
-                        git clone https://github.com/your-org/your-backend-repo.git
-                        cd your-backend-repo
-                        npm install
-                        npm run build
-                    '''
-                }
-            }
-        }
-
-        stage('Build Frontend') {
-            agent {
-                docker {
-                    image 'node:14' // Assuming Node.js for frontend
-                    label 'docker-slave' // Adjust as necessary
-                }
-            }
-            steps {
-                script {
-                    // Clone repository and build the frontend
-                    sh '''
-                        git clone https://github.com/your-org/your-frontend-repo.git
-                        cd your-frontend-repo
-                        npm install
-                        npm run build
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy') {
-            parallel {
-                stage('Deploy Frontend') {
-                    agent {
-                        docker {
-                            image 'nginx:latest' // Assuming nginx for serving the frontend
-                            label 'docker-slave' // Adjust as necessary
-                        }
-                    }
-                    steps {
-                        script {
-                            // Deploy the frontend application
-                            sh '''
-                                docker run --rm -v /path/to/frontend/build:/usr/share/nginx/html -p 8080:80 nginx:latest
-                            '''
-                        }
-                    }
-                }
-
-                stage('Deploy Backend') {
-                    agent {
-                        docker {
-                            image 'node:14' // Using Node.js for backend deployment
-                            label 'docker-slave' // Adjust as necessary
-                        }
-                    }
-                    steps {
-                        script {
-                            // Deploy the backend application
-                            sh '''
-                                docker build -t your-backend-image:latest /path/to/backend
-                                docker run -d -p 3000:3000 your-backend-image:latest
-                            '''
-                        }
-                    }
-                }
-            }
-        }
+  agent none
+  stages {
+    stage('Back-end') {
+      agent {
+        docker { image 'maven:3.8.1-adoptopenjdk-11' }
+      }
+      steps {
+        sh 'mvn --version'
+      }
     }
-
-    post {
-        always {
-            // Clean up any temporary Docker containers or artifacts if needed
-            sh 'docker system prune -f'
-        }
+    stage('Front-end') {
+      agent {
+        docker { image 'node:16-alpine' }
+      }
+      steps {
+        sh 'node --version'
+      }
     }
+  stage('data-base') {
+      agent {
+          docker { image 'mysql:latest'}
+      }
+      steps{
+          sh "SELECT * FROM ABC'
+  }
+}
+  }
 }
