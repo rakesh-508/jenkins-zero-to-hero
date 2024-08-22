@@ -45,26 +45,46 @@ pipeline {
         }
       }
     }
-    stage('Update Deployment File') {
-        environment {
-            GIT_REPO_NAME = "jenkins-zero-to-hero"
-            GIT_USER_NAME = "rakesh-508"
-        }
-        steps {
-            withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
-              sh '''
-    git pull origin main
-    git config user.email "20501A0508@pvpsit.ac.in"
-    git config user.name "rakesh-508"
-    BUILD_NUMBER=${BUILD_NUMBER}
-    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-    git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
-    git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "No changes to commit"
-    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
-'''
+stage('Update Deployment File') {
+    environment {
+        GIT_REPO_NAME = "jenkins-zero-to-hero"
+        GIT_USER_NAME = "rakesh-508"
+    }
+    steps {
+        withCredentials([string(credentialsId: 'github', variable: 'GITHUB_TOKEN')]) {
+            sh '''
+                # Ensure Git configuration
+                git config user.email "20501A0508@pvpsit.ac.in"
+                git config user.name "rakesh-508"
 
-            }
+                # Pull the latest changes
+                git pull origin main
+
+                # Define build number
+                BUILD_NUMBER=${BUILD_NUMBER}
+
+                # Check if placeholder exists
+                if grep -q "replaceImageTag" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml; then
+                    echo "Placeholder found, updating image tag..."
+
+                    # Replace placeholder with build number
+                    sed -i "s/replaceImageTag/${BUILD_NUMBER}/g" java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+
+                    # Stage the file for commit
+                    git add java-maven-sonar-argocd-helm-k8s/spring-boot-app-manifests/deployment.yml
+
+                    # Commit the change
+                    git commit -m "Update deployment image to version ${BUILD_NUMBER}" || echo "No changes to commit"
+
+                    # Push the changes
+                    git push https://${GITHUB_TOKEN}@github.com/${GIT_USER_NAME}/${GIT_REPO_NAME} HEAD:main
+                else
+                    echo "Placeholder not found. Please ensure the placeholder 'replaceImageTag' is present in the manifest file."
+                fi
+            '''
         }
     }
+}
+
   }
 }
